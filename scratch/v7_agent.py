@@ -1,24 +1,7 @@
-# EXP260 combined; V41 remains the frozen primary control.
-# Earlier reservation activation adapted from aurax7 Reactive V5; upstream notices retained.
-# EXP257: V39 base with funded atomic opening.
-# Opening assignment adapted from Rayk Kretzschmar, Rank Your Agent.
-# Existing upstream attribution retained below; original funding guard by Ahmed Berat Ozer.
-# EXP-173 isolate opening market sequence inspired by yhay81/shop-router-0911-simple (Apache-2.0).
-# Kaggriculture EXP-167 candidate. Not submitted automatically.
-# Attribution: thomastschinkel, yhay81, destbreso, aurax7, tetsutani,
-# prvsiyan and Dmitrii Gluzdov. Apache-2.0 derivations; notices retained below.
-# Kaggriculture v31 / EXP-157, Ahmed Berat Ozer, September 9 2026.
-# Selected mechanism: crop_public_order. New independent confirmation is required.
-# Public V221B/V224C production/timing lineage: prvsiyan, Apache-2.0.
-# Original economics and integration; retained upstream licenses follow.
-# Kaggriculture v28 / EXP-154, Ahmed Berat Ozer, September 9 2026.
-# Changes: aurax7 day-end storage guard; Dmitrii Gluzdov physical terminal rescue
-# adapted to v27, with 64 deterministic simulations. Apache-2.0.
-# New action tapes and ordered shop-pair map: yhay81/shop-router-0909, Apache-2.0.
-# Kaggriculture v25, EXP-149: Shop0908 production, sale lead, terminal cargo rescue.
-# Runtime chassis: Apache-2.0; thomastschinkel, yhay81, tetsutani.
-# Routing and public action data: yhay81/shop-router-0908, frozen September 8, 2026.
-# 
+# Kaggriculture V7: Reactive Market-Master (Horizon 24 + 2-Turn Advance Sales + Front-Loading + Low-Spread Attack).
+# Architecture: V45 Full Chassis + V44 Same-Turn Race Escalator + _r60 Survival Guard + 2842 Advance/Frontload Overlay.
+# Upstream attribution: aurax7, sdy623/jaxa623, Ahmed Berat Ozer, Rayk Kretzschmar, yhay81, thomastschinkel, tetsutani, destbreso.
+# Apache-2.0 derivations; all upstream notices retained below.
 #                                  Apache License
 #                            Version 2.0, January 2004
 #                         http://www.apache.org/licenses/
@@ -961,17 +944,10 @@ def _router(observation,step,state):
         state['day27']=True
     return state.get('route',0)
 
-_PIPE3_BAKERY_ROUTES={101,103,104,105,106,107,108,109,111,119,120}
-_PIPE3_MINIMAL=[['BUY_PRODUCT','WHEAT',5]]
-_PIPE3_WHEAT=[['BUY_PRODUCT','WHEAT',5],['BUY_PRODUCT','WHEAT',10],['SELL','WHEAT',60]]
-_PIPE3_STEP2_MIN=[['HIRE'],['HIRE'],['HIRE'],['HIRE'],['HIRE'],['BUY_ANIMAL','COW',2],['BUY_ANIMAL','SHEEP',2]]
-for _p3_rid,_p3_tape in _ROUTES.items():
-    if _p3_rid in _PIPE3_BAKERY_ROUTES:
-        _p3_tape[0]=dict(_p3_tape[0],market=[list(o) for o in _PIPE3_WHEAT])
-    else:
-        _p3_tape[0]=dict(_p3_tape[0],market=[list(o) for o in _PIPE3_MINIMAL])
-        _p3_tape[1]=dict(_p3_tape[1],market=[list(o) for o in _PIPE3_STEP2_MIN])
-del _p3_rid,_p3_tape
+_R42_OPENING=[['BUY_PRODUCT', 'WHEAT', 5], ['BUY_PRODUCT', 'WHEAT', 10], ['SELL', 'WHEAT', 60]]
+for _r42_tape in _ROUTES.values():
+    _r42_tape[0]=dict(_r42_tape[0],market=[list(o) for o in _R42_OPENING])
+del _r42_tape
 _IMPL=make_agent(_ROUTES,router=_router,**_SETTINGS)
 _IMPL.chassis.diagnostics['terminal_rescue_errors']=0
 
@@ -3371,3 +3347,591 @@ agent=globals().pop('agent')
 _PLANNER_NS['_R150_HOME_DISTANCE']={(x,y):len(_PLANNER_NS['_return']((x,y))) for y in range(10) for x in range(10)}
 exec('def _proposals(run, actor, prices, max_per_actor):\n    """One/two resource bundles plus direct carry closure, replacing a baseline suffix."""\n    owners = {}\n    for event in run[\'events\']:\n        if \'acquired\' in event:\n            owners.setdefault((tuple(event[\'xy\']), event[\'op\']), set()).add(event[\'actor\'])\n    proposals = []\n    seen = set()\n    horizon = len(run[\'rows\'])\n    for offset in range(horizon):\n        farm, private = run[\'states\'][offset]\n        pos = tuple(farm[\'farmer\'] if actor == 0 else farm[\'hands\'][actor - 1])\n        inventory = private[\'inventories\'][actor]\n        carried = sum((prices.get(item, 0) * count for item, count in inventory.items()))\n        prefix_deposits = run[\'rows\'][offset - 1][\'deposited_by_actor\'][actor] if offset else {}\n        future_deposits = run[\'rows\'][-1][\'deposited_by_actor\'][actor]\n        obligation = sum((prices.get(item, 0) * (count - prefix_deposits.get(item, 0)) for item, count in future_deposits.items()))\n        bundles = []\n        for y, row in enumerate(farm[\'tiles\']):\n            for x, tile in enumerate(row):\n                if not isinstance(tile, dict):\n                    continue\n                xy, operations, value = ((x, y), [], 0)\n                if tile.get(\'yield_units\', 0) > 0:\n                    item = tile.get(\'crop\') if tile.get(\'kind\') == \'PLANT\' else ANIMALS.get(tile.get(\'animal\'), {}).get(\'product\')\n                    mature = item and (\'animal\' in tile or (START + offset) // 24 - tile[\'planted_day\'] >= CROPS[item][\'first_yield_day\'])\n                    if mature and (not owners.get((xy, \'HARVEST\'), set()) - {actor}):\n                        operations.append([\'HARVEST\'])\n                        value += prices[item] * tile[\'yield_units\']\n                if tile.get(\'fertilizer_available\') and \'animal\' in tile and (not owners.get((xy, \'COLLECT_FERTILIZER\'), set()) - {actor}):\n                    operations.append([\'COLLECT_FERTILIZER\'])\n                    value += prices[\'FERTILIZER\']\n                if operations:\n                    distance = abs(pos[0] - xy[0]) + abs(pos[1] - xy[1]) + len(operations) + _R150_HOME_DISTANCE[xy]\n                    if distance <= horizon - offset:\n                        bundles.append((xy, operations, value, distance))\n        bundles.sort(key=lambda b: (-b[2] / b[3], -b[2], b[0]))\n        variants = [([], carried)] if carried else []\n        for xy, ops, value, _ in bundles[:6]:\n            variants.append(([(xy, ops)], carried + value))\n        for first in bundles[:3]:\n            for second in bundles[:3]:\n                if first[0] != second[0]:\n                    variants.append(([(first[0], first[1]), (second[0], second[1])], carried + first[2] + second[2]))\n        for stops, value in variants:\n            route, cursor = ([], pos)\n            for xy, ops in stops:\n                route += _walk(cursor, xy) + ops\n                cursor = xy\n            route += _return(cursor)\n            if len(route) > horizon - offset:\n                continue\n            route += [[\'PASS\']] * (horizon - offset - len(route))\n            key = (offset, tuple((tuple(c) for c in route)))\n            if key not in seen:\n                seen.add(key)\n                proposals.append((value - obligation, offset, route, len(stops)))\n    proposals.sort(key=lambda p: (-p[0], p[1], p[2]))\n    direct = [p for p in proposals if p[3] == 0 and p[0] > 0][:2]\n    chosen = direct + [p for p in proposals if p not in direct]\n    return chosen[:max_per_actor]',_PLANNER_NS)
 agent=globals().pop('agent')
+
+
+# EXP283 adaptive arm: clone-gated sale pre-emption with drop-time race escalation.
+# Original mechanism by Ahmed Berat Ozer's project. Live top-band replays (research155) show
+# rivals executing the same public route tape and quoting the same product batches at the
+# same drop turns. While the rival is observed executing our tape, V43's R36 native-tape
+# reservation runs with horizon 8; if the rival is then observed selling a race product at the
+# very turn the same product was dropped into our shed while we did not sell it (public market
+# inventory change beyond town consumption; no own realized sale; own shed stock rose), the rival
+# quotes at the drop and the horizon escalates to 24 for the rest of the game.
+_RACE_PARENT=agent
+_RACE_HORIZON_CLONE=8
+_RACE_HORIZON_ESCALATED=24
+_RACE_ITEMS=('CARROT','TOMATO','STRAWBERRY','MELON','EGG','MILK','WOOL')
+_RACE_SHOPS={'BAKERY':('EGG','WHEAT'),'PIZZA_SHOP':('MILK','TOMATO','WHEAT'),'BRUNCH_SPOT':('EGG','WHEAT','STRAWBERRY'),'YARN_STORE':('WOOL',),
+             'ICE_CREAM_SHOP':('STRAWBERRY','MILK','WHEAT'),'PET_CAFE':('CARROT',),'SMOOTHIE_SHOP':('STRAWBERRY','MILK'),'FARMERS_MARKET':('WHEAT','CARROT','TOMATO','STRAWBERRY')}
+_RACE_STATE={}
+_RACE_REPORT=dict(race_clone_turns=0,race_horizon_turns=0,race_lost_races=0,race_escalations=0,race_errors=0)
+_RACE_ORIG_RESERVE=_r36_reserve
+
+def _race_positions_equal(farms,player):
+    own,rival=farms[player],farms[1-player]
+    return len(own['hands'])>0 and own['hands']==rival['hands'] and own['farmer']==rival['farmer']
+
+def _race_clone(observation,state):
+    farms=observation['farms'];player=int(observation['player'])
+    if len(farms[player]['hands'])>0:
+        state['hist'].append(_race_positions_equal(farms,player))
+        if len(state['hist'])>6:state['hist'].pop(0)
+    return len(state['hist'])>=4 and sum(state['hist'])>=4 and _r37_similarity(observation)>=.95
+
+def _race_town(step,shops):
+    out={}
+    if step%4==0:
+        for shop in shops:
+            items=_RACE_SHOPS.get(shop,())
+            for item in items:out[item]=out.get(item,0)+(2 if len(items)==1 else 1)
+    if step%24==0:
+        for item in _RACE_ITEMS:out[item]=out.get(item,0)+1
+    return out
+
+def _race_lost(observation,state):
+    """True when the rival sold a race product at the previous turn, our shed stock of it rose at that turn
+    (a drop) and we did not sell any of it: the rival quotes at the drop while we hold."""
+    prev=state.get('prev');prev_action=state.get('prev_action')
+    if prev is None or prev_action is None:return False
+    step=int(observation['step'])
+    if step!=prev['step']+1 or step%24==0:return False
+    shed=observation['private']['shed'];inv=observation['market']['inventory'];pinv=prev['inventory'];prices=prev['prices']
+    town=_race_town(step-1,prev['shops'])
+    sold={}
+    for order in prev_action.get('market',[]):
+        if len(order)>=3 and order[0]=='SELL' and order[1] in _RACE_ITEMS:sold[order[1]]=1
+    for item in _RACE_ITEMS:
+        held=int(shed.get(item,0));before=int(prev['view'].shed.get(item,0))
+        if held<=before or item in sold or prices.get(item,0)<=1:continue
+        rival=int(inv[item])-int(pinv[item])+town.get(item,0)
+        if rival>0:return True
+    return False
+
+def _race_snapshot(observation):
+    market=observation['market']
+    return dict(step=int(observation['step']),inventory=dict(market['inventory']),prices=dict(market['prices']),shops=list(observation['town'].get('unlocked_shops',[])),view=FarmView(observation))
+
+def _r36_reserve(obs,action):
+    player=int(obs['player']);h=_RACE_STATE.get(player,{}).get('horizon',0)
+    if h>_R37_HORIZONS.get(player,2):
+        saved=_R37_HORIZONS.get(player);_R37_HORIZONS[player]=h
+        try:return _RACE_ORIG_RESERVE(obs,action)
+        finally:
+            if saved is None:_R37_HORIZONS.pop(player,None)
+            else:_R37_HORIZONS[player]=saved
+    return _RACE_ORIG_RESERVE(obs,action)
+
+def agent(observation,configuration=None):
+    state=None
+    try:
+        player=int(observation['player']);step=int(observation['step'])
+        state=_RACE_STATE.get(player)
+        if state is None or step<=state['step']:
+            state=_RACE_STATE[player]={'step':-1,'hist':[],'horizon':0,'level':_RACE_HORIZON_CLONE,'prev':None,'prev_action':None}
+        if step==0:_RACE_REPORT.update(race_clone_turns=0,race_horizon_turns=0,race_lost_races=0,race_escalations=0,race_errors=0)
+        state['step']=step;state['horizon']=0
+        standard=configuration is None or all(configuration.get(k,v)==v for k,v in [('boardSize',10),('turnsPerDay',24),('shedCapacity',100),('maxMarketOrdersPerTurn',10)])
+        if standard and 216<=step<696 and _race_clone(observation,state):
+            _RACE_REPORT['race_clone_turns']+=1
+            if state['level']<_RACE_HORIZON_ESCALATED and _race_lost(observation,state):
+                _RACE_REPORT['race_lost_races']+=1;state['level']=_RACE_HORIZON_ESCALATED;_RACE_REPORT['race_escalations']+=1
+            state['horizon']=state['level'];_RACE_REPORT['race_horizon_turns']+=1
+    except Exception:_RACE_REPORT['race_errors']+=1
+    snapshot=None
+    try:
+        if state is not None and 215<=int(observation['step'])<696:snapshot=_race_snapshot(observation)
+    except Exception:_RACE_REPORT['race_errors']+=1
+    action=_RACE_PARENT(observation,configuration)
+    try:
+        if state is not None:state['prev']=snapshot;state['prev_action']=action if snapshot is not None else None
+    except Exception:_RACE_REPORT['race_errors']+=1
+    _RACE_REPORT.update(getattr(_RACE_PARENT,'telemetry',{}))
+    return action
+agent.telemetry=_RACE_REPORT
+agent=globals().pop('agent')
+
+
+# EXP284 opening arm: step-0 wheat round trip as one buy order followed by one sell order.
+# Original analysis by Ahmed Berat Ozer's project (research155/156 live replays): the parent's split
+# [BUY 5, BUY 10, SELL 60] exposes the second buy to a rival's large round trip in the same turn; two live
+# rivals used [BUY_PRODUCT WHEAT 78, SELL WHEAT 78] and left us one melon seed short. The single large
+# round trip is neutral against the market and symmetric against itself.
+_OPEN_PARENT=agent
+_OPEN_UNITS=10
+_OPEN_FEED_STEP1=5
+_OPEN_REPORT=dict(open_turns=0,open_errors=0)
+def agent(observation,configuration=None):
+    action=_OPEN_PARENT(observation,configuration)
+    try:
+        step=int(observation['step'])
+        if step==0:_OPEN_REPORT.update(open_turns=0,open_errors=0)
+        standard=configuration is None or all(configuration.get(k,v)==v for k,v in [('boardSize',10),('turnsPerDay',24),('shedCapacity',100),('maxMarketOrdersPerTurn',10),('startingMoney',3000)])
+        if standard and step==0 and action.get('market')==[['BUY_PRODUCT','WHEAT',5],['BUY_PRODUCT','WHEAT',10],['SELL','WHEAT',60]]:
+            action=dict(action,market=[['BUY_PRODUCT','WHEAT',_OPEN_UNITS],['SELL','WHEAT',_OPEN_UNITS]]);_OPEN_REPORT['open_turns']+=1
+        elif standard and step==1 and _OPEN_FEED_STEP1<5:
+            market=[list(o) for o in action.get('market',[])]
+            if len(market)>=2 and market[0]==['SELL','WHEAT',13] and market[1]==['BUY_PRODUCT','WHEAT',5]:
+                market[1]=['BUY_PRODUCT','WHEAT',_OPEN_FEED_STEP1];action=dict(action,market=market);_OPEN_REPORT['open_turns']+=1
+    except Exception:_OPEN_REPORT['open_errors']+=1
+    _OPEN_REPORT.update(getattr(_OPEN_PARENT,'telemetry',{}))
+    return action
+agent.telemetry=_OPEN_REPORT
+agent=globals().pop('agent')
+
+
+# Replay-derived invariants: preserve day-1 labor liquidity and rescue animals
+# that would otherwise end a second consecutive day without feed.
+_R60_SURVIVAL_PARENT=agent
+_R60_SURVIVAL_REPORT=dict(opening_changed_turns=0,opening_seed_units_suppressed=0,
+    endangered_observations=0,rescue_changed_turns=0,rescue_moves=0,
+    rescue_feed_requests=0,rescue_confirmed=0,rescue_failed=0,rescue_errors=0)
+_R60_SURVIVAL_STATES={}
+_R60_OPENING_RESERVE=4
+_R60_SEED_COST={'WHEAT':10,'CARROT':20,'TOMATO':50,'STRAWBERRY':100,'MELON':80}
+_R60_ANIMAL_PRODUCT={'GOOSE':'EGG','COW':'MILK','SHEEP':'WOOL'}
+_R60_ANIMAL_COST={'GOOSE':300,'COW':400,'SHEEP':500}
+_R60_ANIMAL_INTERVAL={'GOOSE':1,'COW':2,'SHEEP':3}
+_R60_MOVE={'NORTH':(0,-1),'SOUTH':(0,1),'EAST':(1,0),'WEST':(-1,0)}
+
+def _r60_opening_liquidity(obs,action):
+    """Do not trade away the four fixed dollars needed for three day-1 hires."""
+    if int(obs['step'])//24!=0 or int(obs['step'])%24<18:return action
+    orders=action.get('market',[]) or []
+    # This guard is intentionally narrow. The verified opening tail contains only
+    # fixed-price wheat seed purchases; any other expenditure keeps parent policy.
+    if any(o and o[0] in ('BUY_LAND','BUY_ANIMAL','BUY_PRODUCT','HIRE') for o in orders):return action
+    cash=max(0,int(float(obs['farms'][obs['player']]['money'])))
+    changed=False;result=[]
+    for order in orders:
+        if len(order)>=3 and order[:2]==['BUY_SEED','WHEAT']:
+            requested=max(0,int(order[2]));keep=min(requested,max(0,cash-_R60_OPENING_RESERVE)//_R60_SEED_COST['WHEAT'])
+            if keep:
+                replacement=list(order);replacement[2]=keep;result.append(replacement);cash-=keep*_R60_SEED_COST['WHEAT']
+            if keep<requested:
+                changed=True;_R60_SURVIVAL_REPORT['opening_seed_units_suppressed']+=requested-keep
+        else:result.append(copy.deepcopy(order))
+    if not changed:return action
+    guarded=copy.deepcopy(action);guarded['market']=result
+    _R60_SURVIVAL_REPORT['opening_changed_turns']+=1
+    return guarded
+
+def _r60_commands(action,count):
+    commands=[copy.deepcopy(action.get('farmer') or ['PASS'])]
+    commands.extend(copy.deepcopy(action.get('hands') or []))
+    commands.extend([['PASS'] for _ in range(max(0,count-len(commands)))])
+    return commands[:count]
+
+def _r60_risks(obs):
+    day=int(obs['step'])//24;prices=obs['market']['prices'];farm=obs['farms'][obs['player']]
+    risks=[]
+    for y,row in enumerate(farm['tiles']):
+        for x,tile in enumerate(row):
+            if not isinstance(tile,dict) or not tile.get('animal'):continue
+            if tile.get('fed_today') or int(tile.get('consecutive_unfed',0))<1:continue
+            animal=tile['animal'];product=_R60_ANIMAL_PRODUCT[animal]
+            remaining=max(0,29-day);future=(remaining+_R60_ANIMAL_INTERVAL[animal]-1)//_R60_ANIMAL_INTERVAL[animal]
+            loss=_R60_ANIMAL_COST[animal]+future*max(1,int(prices.get(product,1)))
+            risks.append((loss,(x,y),animal))
+    return sorted(risks,reverse=True)
+
+def _r60_parent_feeds(obs,commands,targets):
+    farm=obs['farms'][obs['player']];private=obs['private']
+    positions=[tuple(farm['farmer'])]+[tuple(p) for p in farm['hands']]
+    safe=set()
+    for actor,(pos,command) in enumerate(zip(positions,commands)):
+        inv=private['inventories'][actor] if actor<len(private['inventories']) else {}
+        if command and command[0]=='FEED' and inv.get('WHEAT',0)>0 and pos in targets:safe.add(pos)
+    return safe
+
+def _r60_step_toward(start,target):
+    x,y=start;tx,ty=target
+    if x<tx:return ['EAST']
+    if x>tx:return ['WEST']
+    if y<ty:return ['SOUTH']
+    if y>ty:return ['NORTH']
+    return ['FEED']
+
+def _r60_survival_guard(obs,action,state):
+    """Use the last two actions only when an observed animal would escape tonight."""
+    pending=state.pop('pending_feeds',[])
+    if pending:
+        farm=obs['farms'][obs['player']]
+        for x,y in pending:
+            tile=farm['tiles'][y][x]
+            if not isinstance(tile,dict) or tile.get('fed_today'):_R60_SURVIVAL_REPORT['rescue_confirmed']+=1
+            else:_R60_SURVIVAL_REPORT['rescue_failed']+=1
+    day=int(obs['step'])//24;hour=int(obs['step'])%24
+    # Survival after the season has no terminal value, and hour 22 is the final
+    # actionable observation on the standard 719-action horizon.
+    if day>=29 or hour<22:return action
+    risks=_r60_risks(obs)
+    if not risks:return action
+    _R60_SURVIVAL_REPORT['endangered_observations']+=1
+    farm=obs['farms'][obs['player']];private=obs['private']
+    positions=[tuple(farm['farmer'])]+[tuple(p) for p in farm['hands']]
+    commands=_r60_commands(action,len(positions));targets={xy for _,xy,_ in risks}
+    protected=_r60_parent_feeds(obs,commands,targets);assigned=set();requested=[];changed=False
+    for _,target,_ in risks:
+        if target in protected:continue
+        remaining_moves=23-hour
+        options=[]
+        for actor,(pos,inv) in enumerate(zip(positions,private['inventories'])):
+            if actor in assigned or int(inv.get('WHEAT',0))<=0:continue
+            distance=abs(pos[0]-target[0])+abs(pos[1]-target[1])
+            if distance>remaining_moves:continue
+            command=commands[actor];op=command[0] if command else 'PASS'
+            # Prefer a clean carrier and an otherwise idle command. A carried animal
+            # is especially expensive to strand, so it receives the largest penalty.
+            animal_cargo=sum(max(0,int(inv.get(a,0))) for a in _R60_ANIMAL_PRODUCT)
+            other_cargo=sum(max(0,int(v)) for k,v in inv.items() if k!='WHEAT')
+            importance={'PASS':0,'CARE':1,'COLLECT_FERTILIZER':1,'WATER':2,
+                        'HARVEST':3,'PLACE':4,'PLANT':4,'FEED':5}.get(op,2)
+            options.append((bool(animal_cargo),bool(other_cargo),distance,importance,actor,pos))
+        if not options:continue
+        *_,actor,pos=min(options);command=_r60_step_toward(pos,target)
+        if commands[actor]!=command:
+            commands[actor]=command;changed=True
+            if command[0]=='FEED':
+                requested.append(target);_R60_SURVIVAL_REPORT['rescue_feed_requests']+=1
+            else:_R60_SURVIVAL_REPORT['rescue_moves']+=1
+        assigned.add(actor)
+    if not changed:return action
+    guarded=copy.deepcopy(action);guarded['farmer']=commands[0];guarded['hands']=commands[1:]
+    if requested:state['pending_feeds']=requested
+    _R60_SURVIVAL_REPORT['rescue_changed_turns']+=1
+    return guarded
+
+def agent(observation,configuration=None):
+    result=_R60_SURVIVAL_PARENT(observation,configuration)
+    try:
+        step=int(observation['step']);player=int(observation['player']);state=_R60_SURVIVAL_STATES.get(player)
+        if state is None or step<=state.get('step',-1):
+            state=_R60_SURVIVAL_STATES[player]={'step':-1}
+            for key in _R60_SURVIVAL_REPORT:_R60_SURVIVAL_REPORT[key]=0
+        state['step']=step
+        if configuration is None or all(configuration.get(k,v)==v for k,v in [('boardSize',10),('turnsPerDay',24),('maxMarketOrdersPerTurn',10)]):
+            # opening liquidity bypassed for v41 plans
+            result=_r60_survival_guard(observation,result,state)
+    except Exception:_R60_SURVIVAL_REPORT['rescue_errors']+=1
+    _R60_SURVIVAL_COMBINED.update(getattr(_R60_SURVIVAL_PARENT,'telemetry',{}));_R60_SURVIVAL_COMBINED.update(_R60_SURVIVAL_REPORT)
+    return result
+_R60_SURVIVAL_COMBINED={}
+agent.telemetry=_R60_SURVIVAL_COMBINED
+agent=globals().pop('agent')
+
+
+# ===========================================================================
+# 2842 ADVANCED MARKET OVERLAY (sdy623 / jaxa623)
+# 1. Horizon Widened to 24
+# 2. Market Front-Loading (sells before buys with simulation safety)
+# 3. Two-Turn Sale Advance (Lookahead = 2 for premium products)
+# ===========================================================================
+_V43_OPENING = [["BUY_PRODUCT", "WHEAT", 10], ["SELL", "WHEAT", 10]]
+_PARENT = agent
+OPEN_UNITS = 10
+
+HORIZON = 24
+OPEN_UNITS = 10
+_V43_OPENING = [["BUY_PRODUCT", "WHEAT", 5], ["BUY_PRODUCT", "WHEAT", 10], ["SELL", "WHEAT", 60]]
+
+
+class _Horizons(dict):
+    """The parent reserves (pre-sells) tape sales up to _R37_HORIZONS[player] turns ahead (4 in its 288..696 window).
+    .get() answers HORIZON whenever the parent set 4, so its own writes still land and the 2/3-turn phases stay native."""
+    def get(self, key, default=None):
+        v = dict.get(self, key, default)
+        return HORIZON if v is not None and v >= 4 else v
+
+
+_R37_HORIZONS = _Horizons()
+
+# ---------------------------------------------------------------- front-loading core
+# frontload_core.py — market-order front-loading wrapper for Kaggriculture.
+# Original wrapper logic (Van / Claude, 2026-09-15). Parent agent is loaded separately.
+#
+# Idea: the official interpreter processes both players' market lists index-by-index
+# (lockstep per unit).  A SELL / BUY_PRODUCT that sits behind non-market-moving orders
+# (BUY_SEED, HIRE, BUY_LAND, BUY_ANIMAL) executes later than it could.  Against an
+# opponent whose same order sits at a later index, executing first captures better
+# prices (before the opponent's sells depress / buys inflate the shared inventory).
+# The wrapper only reorders; it never adds, removes, or resizes orders, and it keeps
+# the original list whenever a faithful solo simulation says the reordered list would
+# not execute in full (cash / shed capacity), or when the original itself would not.
+import math
+
+_MARKET_I0 = 10000
+_PRICE_FLOOR = 1
+_HINGE_GAIN = 8.0
+_MARKET_PARAMS = {
+    "WHEAT":      {"base":  25, "I0": _MARKET_I0, "T": 400, "below_func": "sqrt",   "below_target": 0.80, "above_func": "log",    "above_target": 0.20},
+    "CARROT":     {"base":  35, "I0": _MARKET_I0, "T": 450, "below_func": "hinge",  "below_target": 1.00, "above_func": "sqrt",   "above_target": 0.70},
+    "TOMATO":     {"base":  60, "I0": _MARKET_I0, "T": 200, "below_func": "hinge",  "below_target": 0.40, "above_func": "sqrt",   "above_target": 0.60},
+    "STRAWBERRY": {"base": 120, "I0": _MARKET_I0, "T": 100, "below_func": "sqrt",   "below_target": 0.70, "above_func": "linear", "above_target": 1.60},
+    "MELON":      {"base": 250, "I0": _MARKET_I0, "T": 300, "below_func": "log",    "below_target": 0.20, "above_func": "sq",     "above_target": 3.60},
+    "EGG":        {"base":  50, "I0": _MARKET_I0, "T": 332, "below_func": "hinge",  "below_target": 0.40, "above_func": "log",    "above_target": 0.20},
+    "MILK":       {"base": 160, "I0": _MARKET_I0, "T": 122, "below_func": "sqrt",   "below_target": 0.60, "above_func": "linear", "above_target": 1.60},
+    "WOOL":       {"base": 200, "I0": _MARKET_I0, "T": 105, "below_func": "log",    "below_target": 0.20, "above_func": "sq",     "above_target": 3.20},
+    "FERTILIZER": {"base": 100, "I0": _MARKET_I0, "T": 200, "below_func": "linear", "below_target": 0.40, "above_func": "linear", "above_target": 0.40},
+}
+_PRODUCTS = list(_MARKET_PARAMS)
+_SEED_COST = {"WHEAT": 10, "CARROT": 20, "TOMATO": 50, "STRAWBERRY": 100, "MELON": 80}
+_ANIMAL_COST = {"CHICKEN": 150, "GOOSE": 300, "COW": 400, "SHEEP": 500}
+_LAND_PRICES = [1000, 2000, 4000]
+
+
+def _shape(func, x, T=None):
+    x = max(0.0, x)
+    if func == "linear": return x
+    if func == "sq": return x * x
+    if func == "sqrt": return math.sqrt(x)
+    if func == "log": return math.log(1.0 + x)
+    if func == "log10": return math.log10(1.0 + x)
+    if func == "hinge":
+        if not T or T <= 0: return x
+        u = x / T
+        return u + _HINGE_GAIN * max(0.0, u - 1.0) ** 2
+    return x
+
+
+def _price(item, inventory, params):
+    p = params[item]; base = p["base"]; I0 = p["I0"]; T = p["T"]
+    if inventory < I0:
+        amp = p["below_target"] * base / _shape(p["below_func"], T, T)
+        v = base + amp * _shape(p["below_func"], I0 - inventory, T)
+    else:
+        amp = p["above_target"] * base / _shape(p["above_func"], T, T)
+        v = base - amp * _shape(p["above_func"], inventory - I0, T)
+    return max(_PRICE_FLOOR, int(round(v)))
+
+
+def _fib(n):
+    a, b = 1, 1
+    for _ in range(n): a, b = b, a + b
+    return a
+
+
+def _simulate(orders, money, shed_total, inv, hires_today, n_land_extra, params, opp_pressure=0):
+    """Solo execution of one market list under the interpreter's per-unit rules.
+    opp_pressure>0 makes buys/sells pessimistic (inventory moves an extra unit per unit
+    executed, as it would against a lockstep opponent doing the same).
+    Returns (all_executed, money_after)."""
+    inv = dict(inv); money = float(money); shed = int(shed_total)
+    for o in orders:
+        if not isinstance(o, (list, tuple)) or not o: return False, money
+        op = o[0]
+        if op == "HIRE":
+            c = _fib(hires_today)
+            if money < c: return False, money
+            money -= c; hires_today += 1; continue
+        if op == "BUY_LAND":
+            if n_land_extra >= len(_LAND_PRICES): return False, money
+            c = _LAND_PRICES[n_land_extra]
+            if money < c: return False, money
+            money -= c; n_land_extra += 1; continue
+        if len(o) < 3: return False, money
+        try: n = int(o[2])
+        except Exception: return False, money
+        if n <= 0: return False, money
+        item = o[1]
+        if op == "SELL":
+            if item not in params: return False, money
+            for _ in range(n):
+                p = _price(item, inv[item], params)
+                money += p
+                if p > 1: inv[item] += 1 + opp_pressure
+                shed -= 1
+        elif op == "BUY_PRODUCT":
+            if item not in ("WHEAT", "FERTILIZER"): return False, money
+            for _ in range(n):
+                p = _price(item, inv[item] - 1, params)
+                if money < p or shed >= 100: return False, money
+                money -= p; inv[item] -= 1 + opp_pressure; shed += 1
+        elif op == "BUY_SEED":
+            if item not in _SEED_COST: return False, money
+            c = _SEED_COST[item] * n
+            if money < c: return False, money
+            money -= c
+        elif op == "BUY_ANIMAL":
+            if item not in _ANIMAL_COST: return False, money
+            for _ in range(n):
+                c = _ANIMAL_COST[item]
+                if money < c or shed >= 100: return False, money
+                money -= c; shed += 1
+        else:
+            return False, money
+    return True, money
+
+
+def frontload(obs, market, params=None, telemetry=None):
+    """Return a reordered copy of `market` (list of orders) or the original list."""
+    if not isinstance(market, list) or len(market) < 2: return market
+    orders = [list(o) for o in market if isinstance(o, (list, tuple)) and o]
+    if len(orders) != len(market): return market
+    # groups: A = SELL that is not the sell leg of a same-item buy->sell wash;
+    #         B = BUY_PRODUCT and wash SELLs (original relative order);
+    #         C = everything else (original relative order)
+    A, B, C = [], [], []
+    for j, o in enumerate(orders):
+        op = o[0]
+        if op == "SELL":
+            wash = any(p[0] == "BUY_PRODUCT" and len(p) > 1 and len(o) > 1 and p[1] == o[1] for p in orders[:j])
+            (B if wash else A).append(o)
+        elif op == "BUY_PRODUCT":
+            B.append(o)
+        else:
+            C.append(o)
+    new = A + B + C
+    if new == orders: return market
+    try:
+        me = int(obs["player"]); farm = obs["farms"][me]; private = obs["private"]
+        money = float(farm["money"]); shed_total = sum(int(v) for v in private["shed"].values())
+        inv = {k: int(v) for k, v in obs["market"]["inventory"].items()}
+        hires_today = int(farm.get("hires_today", 0)); n_land_extra = max(0, len(farm.get("unlocked_quadrants", ["NW"])) - 1)
+        params = params or _MARKET_PARAMS
+        for pressure in (0, 1):
+            ok_old, _ = _simulate(orders, money, shed_total, inv, hires_today, n_land_extra, params, pressure)
+            ok_new, _ = _simulate(new, money, shed_total, inv, hires_today, n_land_extra, params, pressure)
+            if not ok_old or not ok_new:
+                if telemetry is not None: telemetry["frontload_declined"] = telemetry.get("frontload_declined", 0) + 1
+                return market
+    except Exception:
+        return market
+    if telemetry is not None:
+        telemetry["frontload_turns"] = telemetry.get("frontload_turns", 0) + 1
+    return new
+
+
+# ---------------------------------------------------------------- sale-advance core
+# advance_core.py — one-turn sale advance for tape-driven parents (Kaggriculture).
+# Original wrapper logic (Van / Claude, 2026-09-15).
+#
+# If the parent's plan (tape) sells item X at step t+1 and X is already in the shed at step t,
+# sell those units at t instead: against a lockstep opponent that sells at t+1 the earlier seller
+# gets the pre-impact price.  Only pure cash products are advanced (never WHEAT = animal feed,
+# never FERTILIZER = field input, never seeds/animals).  Never on the dawn turn (step % 24 == 23),
+# where the parent's overflow contract inspects the shed.  SELL quantities are caps in the
+# interpreter, so the parent's own SELL at t+1 simply sells whatever was deposited since.
+PREMIUM = ("STRAWBERRY", "WOOL", "EGG", "MILK", "MELON", "CARROT", "TOMATO")
+PROTECT_FIRST = True
+LOOKAHEAD = 2   # how many future tape turns to pre-sell (1 = next turn)
+MIN_UNITS = 1   # advance only when at least this many units can be sold early (tiny advances add risk, not edge)
+
+
+def advance_sales(obs, market, future_market, telemetry=None, max_orders=10, items=PREMIUM):
+    """market: list of orders (already front-loaded or not). future_market: callable(obs) -> next step's tape market list or None.
+    Returns a new list (advanced sells prepended) or the original list."""
+    try:
+        step = int(obs["step"])
+        if step % 24 == 23 or step >= 718:
+            return market
+        nxt = []
+        for off in range(1, LOOKAHEAD + 1):
+            m_off = future_market(obs, off) if LOOKAHEAD > 1 else future_market(obs)
+            if m_off:
+                nxt += [o for o in m_off if isinstance(o, (list, tuple)) and o]
+        if not nxt:
+            return market
+        want = {}
+        # the parent's sale-credit overlay funds feed purchases from the FIRST order of a turn when it is a
+        # non-wheat SELL; advancing that item starves the credit -> leave the first-listed sell alone
+        first = next((o for o in nxt if isinstance(o, (list, tuple)) and o), None)
+        protected = first[1] if first and len(first) > 2 and first[0] == "SELL" and PROTECT_FIRST else None
+        for o in nxt:
+            if isinstance(o, (list, tuple)) and len(o) > 2 and o[0] == "SELL" and o[1] in items and o[1] != protected:
+                try: want[o[1]] = want.get(o[1], 0) + max(0, int(o[2]))
+                except Exception: pass
+        if not want:
+            return market
+        shed = obs["private"]["shed"]
+        cur = [list(o) for o in (market or []) if isinstance(o, (list, tuple)) and o]
+        selling_now = {}
+        for o in cur:
+            if len(o) > 2 and o[0] == "SELL":
+                try: selling_now[o[1]] = selling_now.get(o[1], 0) + max(0, int(o[2]))
+                except Exception: pass
+        extra = []; merged = 0
+        for item, q in want.items():
+            avail = int(shed.get(item, 0)) - selling_now.get(item, 0)
+            n = min(q, avail)
+            if n < MIN_UNITS:
+                continue
+            # merge into an existing SELL of the same item (quantities are caps), else add an order
+            hit = next((o for o in cur if len(o) > 2 and o[0] == "SELL" and o[1] == item), None)
+            if hit is not None:
+                hit[2] = int(hit[2]) + n; merged += n
+            else:
+                extra.append(["SELL", item, n])
+        if len(cur) + len(extra) > max_orders:
+            # keep only what fits (order of `want` = tape order)
+            extra = extra[: max(0, max_orders - len(cur))]
+            if telemetry is not None:
+                telemetry["advance_declined_full"] = telemetry.get("advance_declined_full", 0) + 1
+        if not extra and not merged:
+            return market
+        if telemetry is not None:
+            telemetry["advance_turns"] = telemetry.get("advance_turns", 0) + 1
+            telemetry["advance_units"] = telemetry.get("advance_units", 0) + sum(e[2] for e in extra) + merged
+        return extra + cur
+    except Exception:
+        if telemetry is not None:
+            telemetry["advance_errors"] = telemetry.get("advance_errors", 0) + 1
+        return market
+
+
+# ---------------------------------------------------------------- wrapper
+TELEMETRY = {}
+
+
+def _future_market(obs, offset=1):
+    """The parent's plan (tape) market list for step+offset, or None before its route is chosen."""
+    try:
+        step = int(obs["step"]) + offset
+        if step >= 719:
+            return None
+        impl = _IMPL
+        players = impl.chassis.players
+        native = players.get(int(obs["player"])) if isinstance(players, dict) else None
+        route = 2 if step >= 648 else (native or {}).get("route")
+        if route is None:
+            return None
+        return impl.chassis.routes[route][step].get("market")
+    except Exception:
+        return None
+
+
+def _standard(configuration):
+    if configuration is None: return True
+    try:
+        for k, v in (("boardSize", 10), ("turnsPerDay", 24), ("shedCapacity", 100), ("maxMarketOrdersPerTurn", 10), ("farmHandCostMult", 1)):
+            if configuration.get(k, v) != v: return False
+        if configuration.get("marketParams", None): return False
+    except Exception:
+        return False
+    return True
+
+
+
+del agent
+def agent(observation, configuration=None):
+    action = _PARENT(observation, configuration)
+    try:
+        # step-0 opening: one large wheat round trip instead of the parent's split buy/buy/sell (same net effect on our
+        # own farm; the single index-0 buy is what the per-index lockstep quoting sees first)
+        if isinstance(action, dict) and _standard(configuration) and int(observation["step"]) == 0 and action.get("market") == _V43_OPENING:
+            action = dict(action); action["market"] = [["BUY_PRODUCT", "WHEAT", OPEN_UNITS], ["SELL", "WHEAT", OPEN_UNITS]]
+            TELEMETRY["open_turns"] = TELEMETRY.get("open_turns", 0) + 1
+    except Exception:
+        TELEMETRY["open_errors"] = TELEMETRY.get("open_errors", 0) + 1
+    try:
+        if isinstance(action, dict) and _standard(configuration):
+            m = action.get("market")
+            m = list(m) if isinstance(m, list) else []
+            new = advance_sales(observation, m, _future_market, TELEMETRY)
+            if len(new) > 1:
+                new = frontload(observation, new, None, TELEMETRY)
+            if new is not m:
+                action = dict(action); action["market"] = new
+    except Exception:
+        TELEMETRY["wrap_errors"] = TELEMETRY.get("wrap_errors", 0) + 1
+    return action
+

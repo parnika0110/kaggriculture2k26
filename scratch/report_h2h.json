@@ -1,0 +1,68 @@
+{
+  "c9_vs_original": {
+    "a_wins": 5,
+    "b_wins": 0,
+    "ties": 0,
+    "elo_a": 1.0,
+    "elo_b": 0.0,
+    "a_mean": 94535.0,
+    "b_mean": 94452.0,
+    "a_median": 94535.0,
+    "b_median": 94452.0
+  },
+  "c9_vs_minimal": {
+    "a_wins": 5,
+    "b_wins": 0,
+    "ties": 0,
+    "elo_a": 1.0,
+    "elo_b": 0.0,
+    "a_mean": 94535.0,
+    "b_mean": 94453.0,
+    "a_median": 94535.0,
+    "b_median": 94453.0
+  },
+  "c9_vs_none": {
+    "a_wins": 5,
+    "b_wins": 0,
+    "ties": 0,
+    "elo_a": 1.0,
+    "elo_b": 0.0,
+    "a_mean": 94535.0,
+    "b_mean": 94454.0,
+    "a_median": 94535.0,
+    "b_median": 94454.0
+  },
+  "original_vs_minimal": {
+    "a_wins": 5,
+    "b_wins": 0,
+    "ties": 0,
+    "elo_a": 1.0,
+    "elo_b": 0.0,
+    "a_mean": 94538.0,
+    "b_mean": 94451.0,
+    "a_median": 94538.0,
+    "b_median": 94451.0
+  },
+  "original_vs_none": {
+    "a_wins": 5,
+    "b_wins": 0,
+    "ties": 0,
+    "elo_a": 1.0,
+    "elo_b": 0.0,
+    "a_mean": 108795.0,
+    "b_mean": 108688.0,
+    "a_median": 108795.0,
+    "b_median": 108688.0
+  },
+  "minimal_vs_none": {
+    "a_wins": 5,
+    "b_wins": 0,
+    "ties": 0,
+    "elo_a": 1.0,
+    "elo_b": 0.0,
+    "a_mean": 94544.0,
+    "b_mean": 94449.0,
+    "a_median": 94544.0,
+    "b_median": 94449.0
+  }
+}
